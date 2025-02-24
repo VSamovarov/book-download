@@ -90,10 +90,11 @@ async function knigoraiHandler() {
     const text = await response.text()
     console.log("📜 Содержимое плейлиста:", text)
 
-    const playList = parsePlaylist(text);
+    const playList = JSON.parse(text)
     console.log("🎵 Распарсенный плейлист:", playList)
 
-    return playList;
+    return playList.map(item => ({title: item.title, url: item.file}))
+
   } catch (error) {
     console.error("❌ Ошибка загрузки плейлиста:", error)
   }

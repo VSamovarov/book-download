@@ -1,35 +1,51 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "downloadPlaylist" && Array.isArray(message.playList)) {
-    let delay = 0;
+  if (message.action !== "downloadPlaylist" || !Array.isArray(message.playList)) {
+    return;
+  }
 
-    for (const track of message.playList) {
+  const MAX_CONCURRENT_DOWNLOADS = 3; // Максимальное количество одновременных загрузок
+  let activeDownloads = 0;
+  const queue = [...message.playList];
+
+  const processNext = () => {
+    if (queue.length === 0 && activeDownloads === 0) {
+      console.log("✅ Все загрузки завершены.");
+      sendResponse({ status: "ok" });
+      return;
+    }
+
+    while (activeDownloads < MAX_CONCURRENT_DOWNLOADS && queue.length > 0) {
+      const track = queue.shift();
       if (!track.url || !track.title) {
         console.warn("⚠️ Пропущен некорректный трек:", track);
         continue;
       }
 
+      activeDownloads++;
       const fileName = sanitizeFileName(`${track.title}.mp3`);
 
-      setTimeout(() => {
-        chrome.downloads.download({
+      chrome.downloads.download(
+        {
           url: track.url,
           filename: `AudioBooks/${fileName}`,
-          conflictAction: 'uniquify',
+          conflictAction: "uniquify",
           saveAs: false
-        }, (downloadId) => {
+        },
+        (downloadId) => {
           if (chrome.runtime.lastError) {
             console.error(`❌ Ошибка загрузки ${fileName}:`, chrome.runtime.lastError);
           } else {
             console.log(`📥 Загружается: ${fileName} (ID: ${downloadId})`);
           }
-        });
-      }, delay);
 
-      delay += 1000;
+          activeDownloads--;
+          processNext(); // Запускаем следующую загрузку
+        }
+      );
     }
+  };
 
-    sendResponse({ status: "ok" });
-  }
+  processNext(); // Запускаем первую волну загрузок
 });
 
 function sanitizeFileName(name) {
