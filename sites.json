@@ -1,0 +1,12 @@
+[
+	{
+		"name": "Книга в ухе",
+		"url": "https://knigavuhe.org/",
+		"handler": "knigavuheHandler"
+	},
+	{
+		"name": "Книгорай",
+		"url": "https://knigorai.com/",
+		"handler": "knigoraiHandler"
+	}
+]
