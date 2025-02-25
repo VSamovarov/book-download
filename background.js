@@ -43,7 +43,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       activeDownloads++;
-      const fileName = sanitizeFileName(`${track.index}.mp3`)
+      const fileName = (track.index.toString()).padStart(4, '0') + '.mp3'
 
       chrome.downloads.download(
         {

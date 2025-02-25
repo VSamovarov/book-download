@@ -13,12 +13,19 @@ handlers.knigavuhe = async function() {
   if (!response.ok) throw new Error(`Loading error: ${response.status} ${response.statusText}`)
   const data = await response.json()
   const script = data?.[1]?.js?.[0]
-  if (script && script.includes("BookController.enter")) {
-    const match = script.match(/BookController\.enter\((\{.*?\})\);/s)
-    if (match) {
-      const bookData = JSON.parse(match[1])
-      playlist = bookData.playlist.map((item, index) => ({ index,  title: item.title, url: item.url }))
-    }
+
+  if(!script) return
+  let regx
+  if (script.includes('BookController.enter')) {
+    regx = /BookController\.enter\((\{.*?\})\);/s
+  } else if(script.includes('new BookPlayer')) {
+    regx = /BookPlayer\(\s*\d+\s*,\s*(\[[^\]]*\])/
+  }
+  const match = script.match(regx)
+  if (match) {
+    const bookData = JSON.parse(match[1])
+    playlist = (bookData.playlist || bookData)
+      .map((item, index) => ({ index,  title: item.title, url: item.url }))
   }
   if (playlist) {
     return {
