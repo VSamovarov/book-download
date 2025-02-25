@@ -5,9 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Загрузка книг</title>
     <script src="popup.js" defer></script>
+    <style>
+        .website-list {
+            padding: 1rem;
+            min-width: 10rem;
+        }
+        .website-list__title {
+            font-size: 1rem;
+            margin: 0 0 .5rem 0;
+        }
+        .website-list__list {
+            ul, li {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            li {
+                margin-bottom: .2rem;
+            }
+            a {
+                display: block;
+                padding: .4rem;
+                border-radius: 8px;
+                text-decoration: none;
+                color: inherit;
+                font-size: 1rem;
+            }
+            a:hover {
+                background: #e0e0e0;
+            }
+        }
+    </style>
 </head>
 <body>
-<h1>Список сайтов</h1>
-<div id="site-list-wrapper"></div>
+    <div class="website-list">
+        <h1 class="website-list__title">Список сайтов</h1>
+        <div class="website-list__list" id="site-list-wrapper"></div>
+    </div>
 </body>
 </html>

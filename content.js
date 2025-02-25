@@ -1,101 +1,78 @@
 (async function () {
-  try {
-    // Загружаем sites.json
-    const response = await fetch(chrome.runtime.getURL('sites.json'))
-    const sites = await response.json()
+  const response = await fetch(chrome.runtime.getURL('sites.json'))
+  const sites = await response.json()
+  const currentUrl = window.location.origin
+  let playlist
 
-    // Получаем текущий сайт
-    const currentUrl = window.location.origin
+  const site = sites.find(site => currentUrl.includes(new URL(site.url).origin))
+  if (!site) { return }
 
-    // Проверяем, есть ли сайт в списке
-    const site = sites.find(site => currentUrl.includes(new URL(site.url).origin))
-    if (site) {
-      const playList = await getPlayList(site.handler)
-      if (playList) {
-        addButton(playList)
+  const button = addButton()
+
+  button.addEventListener('click', event => {
+    const target = event.target.closest('button[data-action="download-play-list-button"]')
+    if (target) {
+      const messageWrapper = event.target.parentElement.querySelector('.download-play-list-message')
+      try {
+        console.log(playlist)
+        downloadPlaylist(playlist)
+      } catch (e) {
+        messageWrapper.innerHTML = e.message
       }
-    } else {
-      console.log('Этот сайт не в списке, расширение не активно.')
     }
-  } catch (error) {
-    console.error('Ошибка загрузки sites.json:')
+  })
+
+  await initPlayList()
+
+  chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    try {
+      if (message.action === 'historyChanged') {
+        await initPlayList()
+        sendResponse({ status: 'ok' }) // Отправляем ответ после завершения
+      }
+    } catch (error) {
+      console.error("Ошибка в обработчике сообщений content.js:", error)
+      sendResponse({ status: 'error', message: error.message })
+    }
+    return true
+  })
+
+
+  async function initPlayList() {
+    playlist = await getPlayList(site.handler)
+    button.querySelector('button').disabled = !playlist;
+  }
+
+  async function getPlayList (handlerName) {
+    const handlers = window.SamBookDownload.handlers
+    if (!handlers[handlerName]) {
+      throw new Error(`❌ Unknown handler: ${handlerName}`)
+    }
+    return await handlers[handlerName]()
+  }
+
+  function addButton () {
+    const buttonContainer = document.createElement('div')
+    buttonContainer.classList.add('download-play-list-button-wrapper')
+    buttonContainer.innerHTML = `<button type="button" disabled data-action="download-play-list-button">Завантажити книжку</button>`
+    const messageWrapper = document.createElement('div')
+    messageWrapper.classList.add('download-play-list-message')
+    buttonContainer.appendChild(messageWrapper)
+    document.body.appendChild(buttonContainer)
+    return buttonContainer
+  }
+
+  function downloadPlaylist({ playlist, title }) {
+    if (!Array.isArray(playlist) || playlist.length === 0) {
+      throw new Error(`Playlist is empty or invalid`)
+    }
+    chrome.runtime.sendMessage({ action: "downloadPlaylist", playlist, title }, response => {
+      if (chrome.runtime.lastError) {
+        console.error(`❌ Ошибка при отправке сообщения:`, chrome.runtime.lastError.message)
+        throw new Error(`Ошибка при при загрузке`)
+      } else {
+        console.log(`✅ Сообщение отправлено успешно:`, response)
+      }
+    })
   }
 })()
-
-function addButton(playList) {
-  const button = document.createElement('div')
-  button.classList.add('book-download-load-button')
-  button.innerHTML = `<button type="button" data-action="book-download-load-play-list">Кнопка</button>`
-  document.body.appendChild(button)
-  button.addEventListener('click', (event) => {
-    const target = event.target.closest('[data-action="book-download-load-play-list"]')
-    if(target) {
-      loadPlayList(playList)
-    }
-  })
-}
-
-
-function loadPlayList(playList) {
-  if (!Array.isArray(playList) || playList.length === 0) {
-    console.warn('⚠️ Плейлист пуст или невалидный.')
-    return
-  }
-
-  console.log('🔹 Отправка плейлиста в background:', playList)
-
-  chrome.runtime.sendMessage({ action: 'downloadPlaylist', playList }, (response) => {
-    if (chrome.runtime.lastError) {
-      console.error('❌ Ошибка при отправке:', chrome.runtime.lastError)
-    } else {
-      console.log('✅ Ответ от background:', response)
-    }
-  })
-}
-
-async function getPlayList(handlerName) {
-  return await this[handlerName]()
-}
-
-function knigavuheHandler() {
-  const scripts = document.querySelectorAll('script')
-  for (let script of scripts) {
-    if (script.textContent.includes("BookController.enter")) {
-      const match = script.textContent.match(/BookController\.enter\((\{.*?\})\);/s)
-      if (match) {
-        try {
-          const bookData = JSON.parse(match[1])
-          return bookData.playlist
-        } catch (error) {
-          console.error('Ошибка парсинга playlist:', error)
-        }
-      }
-    }
-  }
-}
-
-async function knigoraiHandler() {
-  const id = new URL(location.href).pathname.split('/').pop()
-  if(!id || isNaN(Number(id))) {
-    return
-  }
-  const url = `https://knigorai.com/books/${id}/playlist.txt`
-  try {
-    const response = await fetch(url)
-
-    if (!response.ok) {
-      throw new Error(`Ошибка загрузки: ${response.status} ${response.statusText}`)
-    }
-
-    const text = await response.text()
-    console.log("📜 Содержимое плейлиста:", text)
-
-    const playList = JSON.parse(text)
-    console.log("🎵 Распарсенный плейлист:", playList)
-
-    return playList.map(item => ({title: item.title, url: item.file}))
-
-  } catch (error) {
-    console.error("❌ Ошибка загрузки плейлиста:", error)
-  }
-}

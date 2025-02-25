@@ -2,11 +2,11 @@
 	{
 		"name": "Книга в ухе",
 		"url": "https://knigavuhe.org/",
-		"handler": "knigavuheHandler"
+		"handler": "knigavuhe"
 	},
 	{
 		"name": "Книгорай",
 		"url": "https://knigorai.com/",
-		"handler": "knigoraiHandler"
+		"handler": "knigorai"
 	}
 ]

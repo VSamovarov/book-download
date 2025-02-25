@@ -1,0 +1,31 @@
+.download-play-list-button-wrapper {
+    font-size: 16px;
+    display: inline-block;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    padding: 2rem;
+    background: bisque;
+    border-radius: 14px;
+    z-index: 9999;
+    box-shadow: 5px 5px 5px rgba(105, 95, 95, 0.61);
+
+    .download-play-list-message {
+        margin-top: 1em;
+        text-align: center;
+    }
+    button[data-action="download-play-list-button"] {
+        padding: 1em 1.5em;
+        font-size: 1em;
+        background: #0a6f54;
+        border: solid 1px #0a6f54;
+        color: white;
+        border-radius: 8px;
+    }
+    button[data-action="download-play-list-button"][disabled] {
+        background: darkgray;
+        color: #4b4b4b;
+        border-color: #4b4b4b;
+    }
+}
+
